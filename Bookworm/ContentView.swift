@@ -1,0 +1,68 @@
+//
+//  ContentView.swift
+//  Bookworm
+//
+//  Created by Gökberk Ali Kulaç on 10.02.2023.
+//
+
+import SwiftUI
+import CoreData
+
+struct ContentView: View {
+    @Environment(\.managedObjectContext) var manageObjectContext
+    @FetchRequest(sortDescriptors: [
+        SortDescriptor(\.title),
+        SortDescriptor(\.author)
+    ]) var books : FetchedResults<Book>
+    
+    @State private var showingAddScreen = false
+    var body: some View {
+        NavigationStack{
+            List{
+                ForEach(books){book in
+                    NavigationLink{
+                        DetailView(book: book)
+                    } label: {
+                        HStack{
+                            EmojiRatingView(rating: book.rating)
+                                .font(.largeTitle)
+                            VStack(alignment: .leading){
+                                Text(book.title ?? "Unknown Title")
+                                Text(book.author ?? "Unknown Author")
+                            }
+                        }
+                    }
+                }.onDelete(perform: deleteBooks)
+            }
+            .navigationTitle("Bookworms")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    EditButton()
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button{
+                        showingAddScreen.toggle()
+                    }label: {
+                        Label("Add Book",systemImage: "plus")
+                    }
+                }
+            }.sheet(isPresented: $showingAddScreen) {
+                AddBookView()
+            }
+        }
+    }
+    
+    func deleteBooks(at offsets: IndexSet){
+        for offset in offsets{
+            let book = books[offset]
+            manageObjectContext.delete(book)
+        }
+        try? manageObjectContext.save()
+    }
+}
+
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView()
+    }
+}
